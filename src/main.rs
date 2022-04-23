@@ -1,26 +1,26 @@
 fn main() {
-    use printpdf::*;
-    use std::fs::File;
-    use std::io::BufWriter;
+    use pdf_canvas::{BuiltinFont, Pdf};
 
-    let page_width = Mm(210.0);
-    let page_height = Mm(297.0);
-    let (doc, page, layer) =
-        PdfDocument::new("PDF_Document_title", page_width, page_height, "Layer 1");
-    let times_roman = printpdf::BuiltinFont::TimesRoman;
-    let font = doc.add_builtin_font(times_roman).unwrap();
+    let pdf_name = "example.pdf";
+    let mut document = Pdf::create(pdf_name).expect("Create pdf file");
+    let font = BuiltinFont::Times_Roman;
 
-    let current_layer = doc.get_page(page).get_layer(layer);
-    let text = "Hello, World!";
+    let width = point_from_mm(210.0);
+    let height = point_from_mm(297.0);
+    document
+        .render_page(width, height, |canvas| {
+            let hello = "Hello World!";
+            let font_size = 24.0;
 
-    current_layer.use_text(text, 14.0, Mm(0.0), Mm(290.0), &font);
+            canvas.left_text(0.0, height - font_size, font, font_size, hello)
+        })
+        .expect("Write page");
+    document.finish().expect("Finish pdf document");
 
-    let file_name = "test_working.pdf";
-    doc.save(&mut BufWriter::new(File::create(file_name).unwrap()))
-        .unwrap();
+    open::that(pdf_name).unwrap();
+}
 
-    match open::that(file_name) {
-        Ok(_) => (),
-        Err(err) => eprintln!("{}", err),
-    };
+fn point_from_mm(mm: f32) -> f32 {
+    let factor = 1.0 / 0.352778;
+    mm * factor
 }
